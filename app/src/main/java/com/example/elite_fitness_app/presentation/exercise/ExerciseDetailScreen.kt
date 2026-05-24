@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
@@ -74,11 +75,42 @@ fun ExerciseDetailScreen(
                         color = Primary,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(onClick = { }) {
+                    val context = LocalContext.current
+                    IconButton(onClick = {
+                        exercise?.let { ex ->
+                            val shareIntent = android.content.Intent().apply {
+                                action = android.content.Intent.ACTION_SEND
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "Check out this exercise: ${ex.name}")
+                                putExtra(
+                                    android.content.Intent.EXTRA_TEXT,
+                                    "Check out this exercise on Elite Fitness Pro!\n\n" +
+                                    "Exercise: ${ex.name}\n" +
+                                    "Target: ${ex.target}\n" +
+                                    "Body Part: ${ex.bodyPart}\n" +
+                                    "Equipment: ${ex.equipment}\n\n" +
+                                    "Instructions:\n" +
+                                    ex.instructions.mapIndexed { index, step -> "${index + 1}. $step" }.joinToString("\n")
+                                )
+                            }
+                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share exercise via"))
+                        }
+                    }) {
                         Icon(Icons.Default.Share, contentDescription = "Share", tint = OnSurface)
                     }
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorite", tint = OnSurface)
+                    val isFavorite = remember(uiState.favorites, exercise) {
+                        exercise != null && uiState.favorites.any { it.itemId == exercise.id && it.type == "exercise" }
+                    }
+                    IconButton(onClick = {
+                        exercise?.let { ex ->
+                            viewModel.toggleFavorite(ex.id)
+                        }
+                    }) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) ActivityRed else OnSurface
+                        )
                     }
                 }
             }
@@ -103,7 +135,7 @@ fun ExerciseDetailScreen(
             ) {
                 // State for toggling media type
                 var showVideo by remember(exercise.id) {
-                    mutableStateOf(!exercise.videoUrl.isNullOrBlank())
+                    mutableStateOf(false)
                 }
 
                 // Exercise Demo Graphic

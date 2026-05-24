@@ -111,4 +111,11 @@ interface ApiService {
     // ─── Search ───────────────────────────────────────────────────────────
     @GET("search")
     suspend fun globalSearch(@Query("q") query: String): ApiResponse<Map<String, Any>>
+
+    // ─── Notifications ────────────────────────────────────────────────────
+    @GET("notifications")
+    suspend fun getNotifications(
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 50
+    ): ApiResponse<List<NotificationDto>>
 }

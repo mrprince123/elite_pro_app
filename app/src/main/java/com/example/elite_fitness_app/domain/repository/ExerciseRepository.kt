@@ -10,4 +10,7 @@ interface ExerciseRepository {
     suspend fun getExercisesByTarget(target: String): Resource<List<Exercise>>
     suspend fun getExercisesByEquipment(equipment: String): Resource<List<Exercise>>
     suspend fun searchExercises(query: String): Resource<List<Exercise>>
+    suspend fun getFavorites(): Resource<List<com.example.elite_fitness_app.domain.model.Favorite>>
+    suspend fun addFavorite(itemId: String, type: String): Resource<com.example.elite_fitness_app.domain.model.Favorite>
+    suspend fun removeFavorite(favoriteId: String): Resource<Unit>
 }

@@ -43,7 +43,9 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onNavigateToWorkoutDetail: (String) -> Unit,
     onNavigateToTrainingPlanDetail: (String) -> Unit,
-    onStartWorkoutSession: (String) -> Unit
+    onStartWorkoutSession: (String) -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToTraining: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -94,7 +96,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
 
-                IconButton(onClick = { /* TODO */ }) {
+                IconButton(onClick = onNavigateToNotifications) {
                     Icon(
                         Icons.Default.Notifications,
                         contentDescription = "Notifications",
@@ -146,7 +148,11 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Training Plans Section
-            SectionHeader(title = "Training Plans", showSeeAll = true)
+            SectionHeader(
+                title = "Training Plans",
+                showSeeAll = true,
+                onSeeAllClick = onNavigateToTraining
+            )
             if (uiState.isLoading) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 20.dp),
@@ -217,25 +223,14 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // FAB
-        FloatingActionButton(
-            onClick = { /* TODO */ },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 88.dp),
-            containerColor = Primary,
-            contentColor = OnPrimary,
-            shape = CircleShape
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "New")
-        }
     }
 }
 
 @Composable
 fun SectionHeader(
     title: String,
-    showSeeAll: Boolean = false
+    showSeeAll: Boolean = false,
+    onSeeAllClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -256,6 +251,7 @@ fun SectionHeader(
                 text = "See all",
                 style = MaterialTheme.typography.labelLarge,
                 color = Primary,
+                modifier = Modifier.clickable { onSeeAllClick() }
             )
         }
     }
@@ -263,9 +259,9 @@ fun SectionHeader(
 
 @Composable
 fun DashboardStats(uiState: HomeUiState) {
-    val calories = (uiState.stats["caloriesBurned"] as? Double)?.toInt() ?: 0
-    val duration = (uiState.stats["totalDuration"] as? Double)?.toInt() ?: 0
-    val sessions = (uiState.stats["completedSessions"] as? Double)?.toInt() ?: 0
+    val calories = (uiState.stats["totalCalories"] as? Number)?.toInt() ?: 0
+    val duration = (uiState.stats["totalDuration"] as? Number)?.toInt() ?: 0
+    val sessions = (uiState.stats["totalSessions"] as? Number)?.toInt() ?: 0
 
     val targetSteps = 10000
     val steps = (calories * 3).coerceAtMost(targetSteps) // Approximate steps from calories

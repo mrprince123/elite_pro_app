@@ -54,7 +54,10 @@ fun MainScreen(
     onNavigateToTrainingPlanDetail: (String) -> Unit,
     onNavigateToExerciseDetail: (String) -> Unit,
     onStartWorkoutSession: (String) -> Unit,
-    onLogoutSuccess: () -> Unit
+    onLogoutSuccess: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToFavorites: () -> Unit
 ) {
     val navController = rememberNavController()
     val workoutUiState by workoutViewModel.uiState.collectAsState()
@@ -96,7 +99,17 @@ fun MainScreen(
                     viewModel = homeViewModel,
                     onNavigateToWorkoutDetail = onNavigateToWorkoutDetail,
                     onNavigateToTrainingPlanDetail = onNavigateToTrainingPlanDetail,
-                    onStartWorkoutSession = onStartWorkoutSession
+                    onStartWorkoutSession = onStartWorkoutSession,
+                    onNavigateToNotifications = onNavigateToNotifications,
+                    onNavigateToTraining = {
+                        navController.navigate(Screen.Training.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
             composable(Screen.MyWorkouts.route) {
@@ -122,7 +135,9 @@ fun MainScreen(
             composable(Screen.Account.route) {
                 AccountScreen(
                     viewModel = accountViewModel,
-                    onLogoutSuccess = onLogoutSuccess
+                    onLogoutSuccess = onLogoutSuccess,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToFavorites = onNavigateToFavorites
                 )
             }
         }

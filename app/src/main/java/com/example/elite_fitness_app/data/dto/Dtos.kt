@@ -157,3 +157,14 @@ data class ChangePasswordRequest(
     @SerializedName("oldPassword") val oldPassword: String,
     @SerializedName("newPassword") val newPassword: String,
 )
+
+// ─── Notification DTOs ────────────────────────────────────────────────────
+data class NotificationDto(
+    @SerializedName("_id") val id: String? = "",
+    @SerializedName("userId") val userId: String? = "",
+    @SerializedName("title") val title: String? = "",
+    @SerializedName("body") val body: String? = "",
+    @SerializedName("type") val type: String? = "",
+    @SerializedName("isRead") val isRead: Boolean? = false,
+    @SerializedName("createdAt") val createdAt: String? = "",
+)

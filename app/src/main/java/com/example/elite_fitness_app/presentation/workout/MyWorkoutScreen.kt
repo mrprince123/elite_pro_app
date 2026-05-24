@@ -46,6 +46,64 @@ fun MyWorkoutScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
+    var selectedFilter by remember { mutableStateOf("All Routines") }
+
+    val filteredWorkouts = remember(uiState.workouts, selectedFilter) {
+        if (selectedFilter == "All Routines") {
+            uiState.workouts
+        } else {
+            uiState.workouts.filter { workout ->
+                when (selectedFilter) {
+                    "Strength" -> {
+                        workout.name.contains("strength", ignoreCase = true) ||
+                        workout.description.contains("strength", ignoreCase = true) ||
+                        workout.name.contains("lift", ignoreCase = true) ||
+                        workout.name.contains("weight", ignoreCase = true) ||
+                        workout.name.contains("chest", ignoreCase = true) ||
+                        workout.name.contains("back", ignoreCase = true) ||
+                        workout.name.contains("leg", ignoreCase = true) ||
+                        workout.name.contains("arm", ignoreCase = true) ||
+                        workout.exercises.any { 
+                            it.exerciseName.contains("press", ignoreCase = true) ||
+                            it.exerciseName.contains("curl", ignoreCase = true) ||
+                            it.exerciseName.contains("squat", ignoreCase = true) ||
+                            it.exerciseName.contains("deadlift", ignoreCase = true)
+                        } ||
+                        (!workout.name.contains("cardio", ignoreCase = true) && 
+                         !workout.name.contains("stretch", ignoreCase = true) &&
+                         !workout.name.contains("yoga", ignoreCase = true))
+                    }
+                    "Cardio" -> {
+                        workout.name.contains("cardio", ignoreCase = true) ||
+                        workout.description.contains("cardio", ignoreCase = true) ||
+                        workout.name.contains("run", ignoreCase = true) ||
+                        workout.name.contains("walk", ignoreCase = true) ||
+                        workout.name.contains("hiit", ignoreCase = true) ||
+                        workout.name.contains("cycle", ignoreCase = true) ||
+                        workout.exercises.any {
+                            it.exerciseName.contains("run", ignoreCase = true) ||
+                            it.exerciseName.contains("walk", ignoreCase = true) ||
+                            it.exerciseName.contains("jump", ignoreCase = true) ||
+                            it.exerciseName.contains("cardio", ignoreCase = true)
+                        }
+                    }
+                    "Flexibility" -> {
+                        workout.name.contains("flexibility", ignoreCase = true) ||
+                        workout.description.contains("flexibility", ignoreCase = true) ||
+                        workout.name.contains("stretch", ignoreCase = true) ||
+                        workout.name.contains("yoga", ignoreCase = true) ||
+                        workout.name.contains("mobility", ignoreCase = true) ||
+                        workout.exercises.any {
+                            it.exerciseName.contains("stretch", ignoreCase = true) ||
+                            it.exerciseName.contains("yoga", ignoreCase = true) ||
+                            it.exerciseName.contains("mobility", ignoreCase = true)
+                        }
+                    }
+                    else -> false
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -97,8 +155,8 @@ fun MyWorkoutScreen(
                     items(filters) { filter ->
                         EliteChip(
                             label = filter,
-                            selected = filter == "All Routines",
-                            onClick = { }
+                            selected = filter == selectedFilter,
+                            onClick = { selectedFilter = filter }
                         )
                     }
                 }
@@ -115,47 +173,25 @@ fun MyWorkoutScreen(
                         title = "No routines created yet",
                         subtitle = "Tap the '+' button to build your first customized workout routine."
                     )
+                } else if (filteredWorkouts.isEmpty()) {
+                    EmptyState(
+                        icon = Icons.Default.FitnessCenter,
+                        title = "No routines found",
+                        subtitle = "No routines matching the '$selectedFilter' category."
+                    )
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 88.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(uiState.workouts) { workout ->
+                        items(filteredWorkouts) { workout ->
                             RoutineCard(
                                 workout = workout,
                                 onClick = { onNavigateToWorkoutDetail(workout.id) },
                                 onStart = { onStartWorkoutSession(workout.id) },
                                 onDelete = { viewModel.deleteWorkout(workout.id) {} }
                             )
-                        }
-
-                        // Import Workout card
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(120.dp)
-                                    .clip(RoundedCornerShape(28.dp))
-                                    .border(2.dp, OutlineVariant.copy(alpha = 0.4f), RoundedCornerShape(28.dp))
-                                    .clickable { showCreateDialog = true },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(
-                                        Icons.Outlined.Add,
-                                        contentDescription = null,
-                                        tint = OnSurfaceVariant,
-                                        modifier = Modifier.size(32.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "Import Workout",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = OnSurfaceVariant
-                                    )
-                                }
-                            }
                         }
                     }
                 }

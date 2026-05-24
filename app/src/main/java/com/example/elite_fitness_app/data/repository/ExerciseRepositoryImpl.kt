@@ -61,4 +61,29 @@ class ExerciseRepositoryImpl @Inject constructor(
             is Resource.Loading -> Resource.Loading
         }
     }
+
+    override suspend fun getFavorites(): Resource<List<com.example.elite_fitness_app.domain.model.Favorite>> {
+        return when (val result = safeApiCall { api.getFavorites() }) {
+            is Resource.Success -> Resource.Success(result.data.data?.map { it.toDomain() } ?: emptyList())
+            is Resource.Error -> Resource.Error(result.message, result.code)
+            is Resource.Loading -> Resource.Loading
+        }
+    }
+
+    override suspend fun addFavorite(itemId: String, type: String): Resource<com.example.elite_fitness_app.domain.model.Favorite> {
+        val request = com.example.elite_fitness_app.data.dto.CreateFavoriteRequest(type, itemId)
+        return when (val result = safeApiCall { api.addFavorite(request) }) {
+            is Resource.Success -> Resource.Success(result.data.data!!.toDomain())
+            is Resource.Error -> Resource.Error(result.message, result.code)
+            is Resource.Loading -> Resource.Loading
+        }
+    }
+
+    override suspend fun removeFavorite(favoriteId: String): Resource<Unit> {
+        return when (val result = safeApiCall { api.removeFavorite(favoriteId) }) {
+            is Resource.Success -> Resource.Success(Unit)
+            is Resource.Error -> Resource.Error(result.message, result.code)
+            is Resource.Loading -> Resource.Loading
+        }
+    }
 }

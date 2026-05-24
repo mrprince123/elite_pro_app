@@ -15,6 +15,7 @@ data class ExerciseUiState(
     val isLoading: Boolean = false,
     val exercises: List<Exercise> = emptyList(),
     val currentExercise: Exercise? = null,
+    val favorites: List<com.example.elite_fitness_app.domain.model.Favorite> = emptyList(),
     val error: String? = null,
     val searchQuery: String = "",
     val selectedBodyPart: String = "All",
@@ -33,6 +34,7 @@ class ExerciseViewModel @Inject constructor(
 
     init {
         loadExercises()
+        loadFavorites()
         setupSearchDebounce()
     }
 
@@ -109,6 +111,52 @@ class ExerciseViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false, error = result.message) }
             }
             is Resource.Loading -> {}
+        }
+    }
+
+    fun loadFavorites() {
+        viewModelScope.launch {
+            when (val result = exerciseRepository.getFavorites()) {
+                is Resource.Success -> {
+                    _uiState.update { it.copy(favorites = result.data) }
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun toggleFavorite(exerciseId: String) {
+        val currentFavorites = _uiState.value.favorites
+        val existingFavorite = currentFavorites.find { it.itemId == exerciseId && it.type == "exercise" }
+        
+        viewModelScope.launch {
+            if (existingFavorite != null) {
+                // Already favorited, remove it
+                when (val result = exerciseRepository.removeFavorite(existingFavorite.id)) {
+                    is Resource.Success -> {
+                        _uiState.update { 
+                            it.copy(favorites = it.favorites.filterNot { fav -> fav.id == existingFavorite.id }) 
+                        }
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(error = result.message) }
+                    }
+                    is Resource.Loading -> {}
+                }
+            } else {
+                // Not favorited yet, add it
+                when (val result = exerciseRepository.addFavorite(exerciseId, "exercise")) {
+                    is Resource.Success -> {
+                        _uiState.update { 
+                            it.copy(favorites = it.favorites + result.data) 
+                        }
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(error = result.message) }
+                    }
+                    is Resource.Loading -> {}
+                }
+            }
         }
     }
 }

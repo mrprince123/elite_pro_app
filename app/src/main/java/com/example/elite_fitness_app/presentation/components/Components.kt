@@ -409,14 +409,15 @@ fun ProgressRing(
     size: Dp = 64.dp,
     strokeWidth: Dp = 6.dp,
     color: Color = ActivityGreen,
-    trackColor: Color = SurfaceContainerHigh,
+    trackColor: Color? = null,
     label: String = "",
 ) {
+    val resolvedTrackColor = trackColor ?: SurfaceContainerHigh
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(
             progress = { 1f },
             modifier = Modifier.fillMaxSize(),
-            color = trackColor,
+            color = resolvedTrackColor,
             strokeWidth = strokeWidth,
         )
         CircularProgressIndicator(

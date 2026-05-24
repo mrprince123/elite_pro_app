@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.elite_fitness_app.core.utils.Resource
 import com.example.elite_fitness_app.domain.model.Workout
 import com.example.elite_fitness_app.domain.model.WorkoutExercise
+import com.example.elite_fitness_app.domain.model.Favorite
 import com.example.elite_fitness_app.domain.repository.WorkoutRepository
+import com.example.elite_fitness_app.domain.repository.ExerciseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,12 +27,14 @@ data class WorkoutUiState(
     val newWorkoutDifficulty: String = "Intermediate",
     val newWorkoutDuration: Int = 45,
     val addedExercises: List<WorkoutExercise> = emptyList(),
-    val shouldNavigateToLibrary: Boolean = false
+    val shouldNavigateToLibrary: Boolean = false,
+    val favorites: List<Favorite> = emptyList()
 )
 
 @HiltViewModel
 class WorkoutViewModel @Inject constructor(
-    private val workoutRepository: WorkoutRepository
+    private val workoutRepository: WorkoutRepository,
+    private val exerciseRepository: ExerciseRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkoutUiState())
@@ -38,6 +42,7 @@ class WorkoutViewModel @Inject constructor(
 
     init {
         loadWorkouts()
+        loadFavorites()
     }
 
     fun loadWorkouts() {
@@ -219,6 +224,54 @@ class WorkoutViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, error = result.message) }
                 }
                 is Resource.Loading -> {}
+            }
+        }
+    }
+
+    fun loadFavorites() {
+        viewModelScope.launch {
+            when (val result = exerciseRepository.getFavorites()) {
+                is Resource.Success -> {
+                    _uiState.update { it.copy(favorites = result.data) }
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun toggleFavorite(workoutId: String) {
+        val currentFavorites = _uiState.value.favorites
+        val existingFavorite = currentFavorites.find { it.itemId == workoutId && it.type == "workout" }
+        
+        viewModelScope.launch {
+            if (existingFavorite != null) {
+                // Already favorited, remove it
+                when (val result = exerciseRepository.removeFavorite(existingFavorite.id)) {
+                    is Resource.Success -> {
+                        _uiState.update { state ->
+                            state.copy(
+                                favorites = state.favorites.filterNot { it.id == existingFavorite.id }
+                            )
+                        }
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(error = result.message) }
+                    }
+                    is Resource.Loading -> {}
+                }
+            } else {
+                // Not favorited yet, add it
+                when (val result = exerciseRepository.addFavorite(workoutId, "workout")) {
+                    is Resource.Success -> {
+                        _uiState.update { state ->
+                            state.copy(favorites = state.favorites + result.data)
+                        }
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(error = result.message) }
+                    }
+                    is Resource.Loading -> {}
+                }
             }
         }
     }

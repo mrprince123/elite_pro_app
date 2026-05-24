@@ -61,16 +61,6 @@ fun TrainingScreen(
                 }
             }
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { },
-                containerColor = Primary,
-                contentColor = OnPrimary,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = "Start")
-            }
-        },
         containerColor = Surface
     ) { innerPadding ->
         Column(

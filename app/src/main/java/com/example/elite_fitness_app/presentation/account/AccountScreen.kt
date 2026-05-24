@@ -1,6 +1,7 @@
 package com.example.elite_fitness_app.presentation.account
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -16,6 +17,8 @@ import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +36,9 @@ import com.example.elite_fitness_app.ui.theme.*
 @Composable
 fun AccountScreen(
     viewModel: AccountViewModel,
-    onLogoutSuccess: () -> Unit
+    onLogoutSuccess: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToFavorites: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -55,6 +60,13 @@ fun AccountScreen(
                         color = OnSurface,
                         modifier = Modifier.weight(1f)
                     )
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = OnSurface
+                        )
+                    }
                 }
             }
         },
@@ -261,11 +273,13 @@ fun AccountScreen(
                     shape = RoundedCornerShape(28.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
                 ) {
-                    SettingsRow(icon = Icons.Default.Person, title = "Personal Information")
+                    SettingsRow(icon = Icons.Default.Favorite, title = "Favorites & Likes", onClick = onNavigateToFavorites)
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = OutlineVariant.copy(alpha = 0.3f))
-                    SettingsRow(icon = Icons.Default.Notifications, title = "Notifications")
+                    SettingsRow(icon = Icons.Default.Person, title = "Personal Information", onClick = onNavigateToSettings)
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = OutlineVariant.copy(alpha = 0.3f))
-                    SettingsRow(icon = Icons.Default.Lock, title = "Privacy & Security")
+                    SettingsRow(icon = Icons.Default.Notifications, title = "Notifications", onClick = onNavigateToSettings)
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = OutlineVariant.copy(alpha = 0.3f))
+                    SettingsRow(icon = Icons.Default.Lock, title = "Privacy & Security", onClick = onNavigateToSettings)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -396,6 +410,7 @@ fun SettingsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

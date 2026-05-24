@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,7 +48,23 @@ fun WorkoutDetailScreen(
         topBar = {
             EliteTopBar(
                 title = workout?.name ?: "Routine Detail",
-                onBackClick = onNavigateBack
+                onBackClick = onNavigateBack,
+                actions = {
+                    val isFavorite = remember(uiState.favorites, workout) {
+                        workout != null && uiState.favorites.any { it.itemId == workout.id && it.type == "workout" }
+                    }
+                    IconButton(onClick = {
+                        workout?.let { w ->
+                            viewModel.toggleFavorite(w.id)
+                        }
+                    }) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) ActivityRed else OnSurface
+                        )
+                    }
+                }
             )
         },
         containerColor = Surface

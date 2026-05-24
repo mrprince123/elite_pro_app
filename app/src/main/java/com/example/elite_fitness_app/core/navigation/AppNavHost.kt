@@ -12,6 +12,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.example.elite_fitness_app.presentation.account.AccountViewModel
+import com.example.elite_fitness_app.presentation.account.SettingsScreen
+import com.example.elite_fitness_app.presentation.account.SettingsViewModel
+import com.example.elite_fitness_app.presentation.account.FavoritesScreen
+import com.example.elite_fitness_app.presentation.account.FavoritesViewModel
 import com.example.elite_fitness_app.presentation.auth.AuthViewModel
 import com.example.elite_fitness_app.presentation.auth.LoginScreen
 import com.example.elite_fitness_app.presentation.auth.RegisterScreen
@@ -21,6 +25,8 @@ import com.example.elite_fitness_app.presentation.exercise.ExerciseLibraryScreen
 import com.example.elite_fitness_app.presentation.exercise.ExerciseViewModel
 import com.example.elite_fitness_app.presentation.home.HomeViewModel
 import com.example.elite_fitness_app.presentation.main.MainScreen
+import com.example.elite_fitness_app.presentation.notification.NotificationsScreen
+import com.example.elite_fitness_app.presentation.notification.NotificationViewModel
 import com.example.elite_fitness_app.presentation.session.SessionViewModel
 import com.example.elite_fitness_app.presentation.session.WorkoutSessionScreen
 import com.example.elite_fitness_app.presentation.training.TrainingPlanDetailScreen
@@ -130,6 +136,15 @@ fun AppNavHost(
                         navController.navigate(NavGraph.AUTH) {
                             popUpTo(NavGraph.MAIN) { inclusive = true }
                         }
+                    },
+                    onNavigateToNotifications = {
+                        navController.navigate(Screen.Notifications.route)
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.Settings.route)
+                    },
+                    onNavigateToFavorites = {
+                        navController.navigate(Screen.Favorites.route)
                     }
                 )
             }
@@ -210,6 +225,36 @@ fun AppNavHost(
                         // Refresh home data dashboard
                         homeViewModel.loadDashboardData()
                         navController.popBackStack("main_home", inclusive = false)
+                    }
+                )
+            }
+
+            composable(Screen.Notifications.route) {
+                val notificationViewModel: NotificationViewModel = hiltViewModel()
+                NotificationsScreen(
+                    viewModel = notificationViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Settings.route) {
+                val settingsViewModel: SettingsViewModel = hiltViewModel()
+                SettingsScreen(
+                    viewModel = settingsViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Favorites.route) {
+                val favoritesViewModel: FavoritesViewModel = hiltViewModel()
+                FavoritesScreen(
+                    viewModel = favoritesViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToWorkoutDetail = { id ->
+                        navController.navigate(Screen.WorkoutDetail.createRoute(id))
+                    },
+                    onNavigateToExerciseDetail = { id ->
+                        navController.navigate(Screen.ExerciseDetail.createRoute(id))
                     }
                 )
             }
