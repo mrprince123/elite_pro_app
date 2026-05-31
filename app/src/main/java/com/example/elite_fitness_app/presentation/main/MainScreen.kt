@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -33,13 +34,15 @@ import com.example.elite_fitness_app.presentation.training.TrainingScreen
 import com.example.elite_fitness_app.presentation.training.TrainingViewModel
 import com.example.elite_fitness_app.presentation.workout.MyWorkoutScreen
 import com.example.elite_fitness_app.presentation.workout.WorkoutViewModel
+import com.example.elite_fitness_app.presentation.health.HealthScreen
+import com.example.elite_fitness_app.presentation.health.HealthViewModel
 import com.example.elite_fitness_app.ui.theme.*
 
 sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
     data object Home : BottomNavItem(Screen.Home.route, Icons.Default.Home, "Home")
     data object Workouts : BottomNavItem(Screen.MyWorkouts.route, Icons.Default.FitnessCenter, "Workouts")
     data object Library : BottomNavItem(Screen.ExerciseLibrary.route, Icons.Default.LibraryBooks, "Library")
-    data object Training : BottomNavItem(Screen.Training.route, Icons.Default.ListAlt, "Training")
+    data object Health : BottomNavItem(Screen.Health.route, Icons.Default.Favorite, "Health")
     data object Account : BottomNavItem(Screen.Account.route, Icons.Default.AccountCircle, "Profile")
 }
 
@@ -49,6 +52,7 @@ fun MainScreen(
     workoutViewModel: WorkoutViewModel,
     exerciseViewModel: ExerciseViewModel,
     trainingViewModel: TrainingViewModel,
+    healthViewModel: HealthViewModel,
     accountViewModel: AccountViewModel,
     onNavigateToWorkoutDetail: (String) -> Unit,
     onNavigateToTrainingPlanDetail: (String) -> Unit,
@@ -79,6 +83,7 @@ fun MainScreen(
         BottomNavItem.Home,
         BottomNavItem.Workouts,
         BottomNavItem.Library,
+        BottomNavItem.Health,
         BottomNavItem.Account
     )
 
@@ -134,10 +139,9 @@ fun MainScreen(
                     workoutViewModel = workoutViewModel
                 )
             }
-            composable(Screen.Training.route) {
-                TrainingScreen(
-                    viewModel = trainingViewModel,
-                    onNavigateToPlanDetail = onNavigateToTrainingPlanDetail
+            composable(Screen.Health.route) {
+                HealthScreen(
+                    viewModel = healthViewModel
                 )
             }
             composable(Screen.Account.route) {

@@ -198,4 +198,127 @@ class HealthConnectManager @Inject constructor() {
             isSimulated = true
         )
     }
+
+    /**
+     * Read weekly health data from Health Connect.
+     */
+    suspend fun readWeeklyData(context: Context): List<HealthData> {
+        if (!isAvailable(context)) {
+            Timber.d("Health Connect unavailable, returning simulated weekly data")
+            return generateSimulatedWeeklyData()
+        }
+
+        return try {
+            val client = HealthConnectClient.getOrCreate(context)
+            val granted = client.permissionController.getGrantedPermissions()
+
+            if (!PERMISSIONS.all { it in granted }) {
+                Timber.d("Health Connect permissions not granted, returning simulated weekly data")
+                return generateSimulatedWeeklyData()
+            }
+
+            val list = mutableListOf<HealthData>()
+            val zone = ZoneId.systemDefault()
+
+            for (i in 0..6) {
+                val date = LocalDate.now().minusDays(i.toLong())
+                val start = date.atStartOfDay(zone).toInstant()
+                val end = if (i == 0) Instant.now() else date.plusDays(1).atStartOfDay(zone).toInstant()
+                val filter = TimeRangeFilter.between(start, end)
+
+                // Read Steps
+                val stepsRes = client.readRecords(
+                    ReadRecordsRequest(
+                        recordType = StepsRecord::class,
+                        timeRangeFilter = filter
+                    )
+                )
+                val steps = stepsRes.records.sumOf { it.count }
+
+                // Read Calories
+                val calRes = client.readRecords(
+                    ReadRecordsRequest(
+                        recordType = TotalCaloriesBurnedRecord::class,
+                        timeRangeFilter = filter
+                    )
+                )
+                val calories = calRes.records.sumOf { it.energy.inKilocalories }
+
+                // Read Active Minutes
+                val activeRes = client.readRecords(
+                    ReadRecordsRequest(
+                        recordType = ExerciseSessionRecord::class,
+                        timeRangeFilter = filter
+                    )
+                )
+                val minutes = activeRes.records.sumOf { session ->
+                    java.time.Duration.between(session.startTime, session.endTime).toMinutes()
+                }
+
+                // Read Heart Rate for heart points
+                val hrRes = client.readRecords(
+                    ReadRecordsRequest(
+                        recordType = HeartRateRecord::class,
+                        timeRangeFilter = filter
+                    )
+                )
+                var hrPoints = 0
+                hrRes.records.forEach { record ->
+                    record.samples.forEach { sample ->
+                        when {
+                            sample.beatsPerMinute >= 130 -> hrPoints += 2
+                            sample.beatsPerMinute >= 100 -> hrPoints += 1
+                        }
+                    }
+                }
+
+                // Read Distance
+                val distRes = client.readRecords(
+                    ReadRecordsRequest(
+                        recordType = DistanceRecord::class,
+                        timeRangeFilter = filter
+                    )
+                )
+                val distance = distRes.records.sumOf { it.distance.inMeters / 1000.0 }
+
+                list.add(
+                    HealthData(
+                        steps = steps,
+                        activeMinutes = minutes,
+                        heartPoints = hrPoints,
+                        caloriesBurned = calories,
+                        distanceKm = distance,
+                        isSimulated = false
+                    )
+                )
+            }
+            list.reversed()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to read Health Connect weekly data")
+            generateSimulatedWeeklyData()
+        }
+    }
+
+    private fun generateSimulatedWeeklyData(): List<HealthData> {
+        val list = mutableListOf<HealthData>()
+        val baseSteps = listOf(8420L, 7650L, 9120L, 5430L, 10200L, 8890L, 9340L)
+        val baseMins = listOf(45L, 30L, 60L, 20L, 80L, 50L, 55L)
+        val baseHR = listOf(15, 10, 25, 5, 30, 20, 22)
+        val baseCals = listOf(420.0, 360.0, 480.0, 220.0, 560.0, 440.0, 470.0)
+        
+        for (i in 0..6) {
+            val dist = baseSteps[i] * 0.00075
+            list.add(
+                HealthData(
+                    steps = baseSteps[i],
+                    activeMinutes = baseMins[i],
+                    heartPoints = baseHR[i],
+                    caloriesBurned = baseCals[i],
+                    distanceKm = dist,
+                    isSimulated = true
+                )
+            )
+        }
+        return list
+    }
 }

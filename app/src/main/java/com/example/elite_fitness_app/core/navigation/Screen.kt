@@ -13,7 +13,7 @@ sealed class Screen(val route: String) {
     data object Home : Screen("home")
     data object MyWorkouts : Screen("my_workouts")
     data object ExerciseLibrary : Screen("exercise_library")
-    data object Training : Screen("training")
+    data object Health : Screen("health")
     data object Account : Screen("account")
 
     // Detail screens

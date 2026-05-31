@@ -33,6 +33,7 @@ import com.example.elite_fitness_app.presentation.training.TrainingPlanDetailScr
 import com.example.elite_fitness_app.presentation.training.TrainingViewModel
 import com.example.elite_fitness_app.presentation.workout.WorkoutDetailScreen
 import com.example.elite_fitness_app.presentation.workout.WorkoutViewModel
+import com.example.elite_fitness_app.presentation.health.HealthViewModel
 
 @Composable
 fun AppNavHost(
@@ -112,6 +113,7 @@ fun AppNavHost(
                 val workoutViewModel: WorkoutViewModel = hiltViewModel(mainEntry)
                 val exerciseViewModel: ExerciseViewModel = hiltViewModel(mainEntry)
                 val trainingViewModel: TrainingViewModel = hiltViewModel(mainEntry)
+                val healthViewModel: HealthViewModel = hiltViewModel(mainEntry)
                 val accountViewModel: AccountViewModel = hiltViewModel(mainEntry)
                 
                 MainScreen(
@@ -119,6 +121,7 @@ fun AppNavHost(
                     workoutViewModel = workoutViewModel,
                     exerciseViewModel = exerciseViewModel,
                     trainingViewModel = trainingViewModel,
+                    healthViewModel = healthViewModel,
                     accountViewModel = accountViewModel,
                     onNavigateToWorkoutDetail = { id ->
                         navController.navigate(Screen.WorkoutDetail.createRoute(id))
