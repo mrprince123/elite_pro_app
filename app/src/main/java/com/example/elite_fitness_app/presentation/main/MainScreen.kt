@@ -79,7 +79,6 @@ fun MainScreen(
         BottomNavItem.Home,
         BottomNavItem.Workouts,
         BottomNavItem.Library,
-        BottomNavItem.Training,
         BottomNavItem.Account
     )
 
@@ -108,7 +107,8 @@ fun MainScreen(
                     onStartWorkoutSession = onStartWorkoutSession,
                     onNavigateToNotifications = onNavigateToNotifications,
                     onNavigateToTraining = {
-                        navController.navigate(Screen.Training.route) {
+                        // Navigate to Workouts tab (which now includes Prebuilt training plans)
+                        navController.navigate(Screen.MyWorkouts.route) {
                             popUpTo(navController.graph.startDestinationId) {
                                 saveState = true
                             }
@@ -121,7 +121,9 @@ fun MainScreen(
             composable(Screen.MyWorkouts.route) {
                 MyWorkoutScreen(
                     viewModel = workoutViewModel,
+                    trainingViewModel = trainingViewModel,
                     onNavigateToWorkoutDetail = onNavigateToWorkoutDetail,
+                    onNavigateToTrainingPlanDetail = onNavigateToTrainingPlanDetail,
                     onStartWorkoutSession = onStartWorkoutSession
                 )
             }
