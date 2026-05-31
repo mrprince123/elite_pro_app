@@ -1,5 +1,8 @@
 package com.example.elite_fitness_app.presentation.exercise
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +17,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VolumeUp
@@ -25,19 +30,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.example.elite_fitness_app.presentation.components.GlassCard
 import com.example.elite_fitness_app.presentation.components.PrimaryButton
 import com.example.elite_fitness_app.presentation.components.ProgressRing
 import com.example.elite_fitness_app.ui.theme.*
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +60,77 @@ fun ExerciseDetailScreen(
 
     val exercise = uiState.currentExercise
     val scrollState = rememberScrollState()
+    val configuration = LocalConfiguration.current
+    val context = LocalContext.current
+    val activity = context as? Activity
 
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    // Restore portrait orientation when leaving this screen
+    DisposableEffect(Unit) {
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
+    // ── LANDSCAPE FULLSCREEN MODE ───────────────────────────────────────
+    if (isLandscape && exercise != null && !exercise.videoUrl.isNullOrBlank()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .systemBarsPadding()
+        ) {
+            VideoPlayer(
+                videoUrl = exercise.videoUrl,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Exit fullscreen button overlay (top-right)
+            IconButton(
+                onClick = {
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f))
+            ) {
+                Icon(
+                    Icons.Default.FullscreenExit,
+                    contentDescription = "Exit Fullscreen",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            // Back button overlay (top-left)
+            IconButton(
+                onClick = {
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    onNavigateBack()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f))
+            ) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+        return
+    }
+
+    // ── PORTRAIT MODE (Normal Detail View) ──────────────────────────────
     Scaffold(
         topBar = {
             Surface(color = Surface) {
@@ -75,7 +151,7 @@ fun ExerciseDetailScreen(
                         color = Primary,
                         modifier = Modifier.weight(1f)
                     )
-                    val context = LocalContext.current
+                    val shareContext = LocalContext.current
                     IconButton(onClick = {
                         exercise?.let { ex ->
                             val shareIntent = android.content.Intent().apply {
@@ -93,7 +169,7 @@ fun ExerciseDetailScreen(
                                     ex.instructions.mapIndexed { index, step -> "${index + 1}. $step" }.joinToString("\n")
                                 )
                             }
-                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share exercise via"))
+                            shareContext.startActivity(android.content.Intent.createChooser(shareIntent, "Share exercise via"))
                         }
                     }) {
                         Icon(Icons.Default.Share, contentDescription = "Share", tint = OnSurface)
@@ -149,6 +225,26 @@ fun ExerciseDetailScreen(
                             videoUrl = exercise.videoUrl,
                             modifier = Modifier.fillMaxSize()
                         )
+
+                        // Fullscreen / Landscape toggle button
+                        IconButton(
+                            onClick = {
+                                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(12.dp)
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.5f))
+                        ) {
+                            Icon(
+                                Icons.Default.Fullscreen,
+                                contentDescription = "Fullscreen",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     } else {
                         AsyncImage(
                             model = exercise.gifUrl.ifBlank { "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800" },

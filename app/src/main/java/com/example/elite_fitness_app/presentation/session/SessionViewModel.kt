@@ -103,7 +103,7 @@ class SessionViewModel @Inject constructor(
     fun endSession(notes: String, onSuccess: () -> Unit) {
         timerJob?.cancel()
         val session = _uiState.value.currentSession ?: return
-        val workout = _uiState.value.workout ?: return
+        _uiState.value.workout ?: return
         val elapsed = _uiState.value.elapsedSeconds
         
         // Approximate calories: 6 kcal per minute as standard

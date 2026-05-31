@@ -1,7 +1,10 @@
 package com.example.elite_fitness_app.presentation.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.elite_fitness_app.core.utils.HealthConnectManager
+import com.example.elite_fitness_app.core.utils.HealthData
 import com.example.elite_fitness_app.core.utils.Resource
 import com.example.elite_fitness_app.domain.model.TrainingPlan
 import com.example.elite_fitness_app.domain.model.User
@@ -23,7 +26,11 @@ data class HomeUiState(
     val workouts: List<Workout> = emptyList(),
     val trainingPlans: List<TrainingPlan> = emptyList(),
     val stats: Map<String, Any> = emptyMap(),
-    val error: String? = null
+    val error: String? = null,
+    // Health Connect data
+    val healthData: HealthData = HealthData(),
+    val isSyncingHealth: Boolean = false,
+    val healthSynced: Boolean = false
 )
 
 @HiltViewModel
@@ -31,7 +38,8 @@ class HomeViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val workoutRepository: WorkoutRepository,
     private val trainingPlanRepository: TrainingPlanRepository,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val healthConnectManager: HealthConnectManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -86,5 +94,30 @@ class HomeViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * Sync health data from Health Connect or use simulated fallback.
+     */
+    fun syncHealthData(context: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSyncingHealth = true) }
+            val data = healthConnectManager.readTodayData(context)
+            _uiState.update {
+                it.copy(
+                    healthData = data,
+                    isSyncingHealth = false,
+                    healthSynced = true
+                )
+            }
+        }
+    }
+
+    fun isHealthConnectAvailable(context: Context): Boolean {
+        return healthConnectManager.isAvailable(context)
+    }
+
+    suspend fun hasHealthPermissions(context: Context): Boolean {
+        return healthConnectManager.hasPermissions(context)
     }
 }

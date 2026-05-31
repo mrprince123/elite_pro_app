@@ -43,7 +43,7 @@ fun SplashScreen(
 
     // Animated gradient background
     val infiniteTransition = rememberInfiniteTransition(label = "gradient")
-    val gradientOffset = infiniteTransition.animateFloat(
+    infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(

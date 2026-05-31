@@ -118,9 +118,9 @@ fun ExerciseLibraryScreen(
                         ExerciseListItem(
                             exercise = exercise,
                             onClick = { onNavigateToDetail(exercise.id) },
-                            onAddClick = if (workoutViewModel != null) {
+                            onAddClick = if (workoutViewModel != null && workoutUiState?.isAddingExercise == true) {
                                 {
-                                    val currentWorkout = workoutUiState?.currentWorkout
+                                    val currentWorkout = workoutUiState.currentWorkout
                                     if (currentWorkout != null) {
                                         workoutViewModel.addExerciseToCurrentWorkout(exercise.id, exercise.name) {
                                             Toast.makeText(context, "Added to ${currentWorkout.name}", Toast.LENGTH_SHORT).show()

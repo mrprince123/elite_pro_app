@@ -1,5 +1,10 @@
 package com.example.elite_fitness_app.presentation.account
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,7 +14,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Height
@@ -25,8 +32,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.elite_fitness_app.presentation.components.EliteInputField
 import com.example.elite_fitness_app.presentation.components.GlassCard
 import com.example.elite_fitness_app.presentation.components.PrimaryButton
@@ -43,6 +53,14 @@ fun AccountScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Photo picker launcher
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.onProfileImageSelected(it, context) }
+    }
 
     Scaffold(
         topBar = {
@@ -91,19 +109,58 @@ fun AccountScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Profile avatar
+                        // Profile avatar with camera overlay
                         Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(CircleShape)
-                                .background(PrimaryContainer.copy(alpha = 0.15f)),
+                            modifier = Modifier.size(72.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = (uiState.user?.name?.firstOrNull()?.uppercase() ?: "A"),
-                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                                color = Primary
-                            )
+                            val profileImage = uiState.profileImageUri
+                            if (!profileImage.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = profileImage,
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .size(72.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(72.dp)
+                                        .clip(CircleShape)
+                                        .background(PrimaryContainer.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = (uiState.user?.name?.firstOrNull()?.uppercase() ?: "A"),
+                                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Primary
+                                    )
+                                }
+                            }
+
+                            // Camera icon overlay
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(26.dp)
+                                    .clip(CircleShape)
+                                    .background(Primary)
+                                    .clickable {
+                                        photoPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = "Change Photo",
+                                    tint = OnPrimary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
@@ -134,8 +191,15 @@ fun AccountScreen(
                             }
                         }
 
-                        IconButton(onClick = { }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = OnSurfaceVariant)
+                        // Edit / Close button
+                        IconButton(onClick = {
+                            if (uiState.isEditing) viewModel.cancelEdit() else viewModel.toggleEditMode()
+                        }) {
+                            Icon(
+                                if (uiState.isEditing) Icons.Default.Close else Icons.Default.Edit,
+                                contentDescription = if (uiState.isEditing) "Cancel Edit" else "Edit",
+                                tint = if (uiState.isEditing) Error else OnSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -172,7 +236,8 @@ fun AccountScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Editable Fields Section
+                // ── Biometrics & Goals Section ──────────────────────────────
+
                 Text(
                     text = "Biometrics & Goals",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -182,79 +247,148 @@ fun AccountScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                EliteInputField(
-                    value = uiState.editName,
-                    onValueChange = viewModel::updateName,
-                    label = "Display Name",
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                EliteInputField(
-                    value = uiState.editPhone,
-                    onValueChange = viewModel::updatePhone,
-                    label = "Phone Number",
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    EliteInputField(
-                        value = uiState.editHeight,
-                        onValueChange = viewModel::updateHeight,
-                        label = "Height (cm)",
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    EliteInputField(
-                        value = uiState.editWeight,
-                        onValueChange = viewModel::updateWeight,
-                        label = "Weight (kg)",
-                        modifier = Modifier.weight(1f)
-                    )
+                // ── READ-ONLY VIEW (when not editing) ───────────────────────
+                AnimatedVisibility(
+                    visible = !uiState.isEditing,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
+                    ) {
+                        Column {
+                            ProfileInfoRow(
+                                label = "Display Name",
+                                value = uiState.editName.ifBlank { "Not set" }
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = OutlineVariant.copy(alpha = 0.3f)
+                            )
+                            ProfileInfoRow(
+                                label = "Phone Number",
+                                value = uiState.editPhone.ifBlank { "Not set" }
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = OutlineVariant.copy(alpha = 0.3f)
+                            )
+                            ProfileInfoRow(
+                                label = "Height",
+                                value = if (uiState.editHeight.isNotBlank()) "${uiState.editHeight} cm" else "Not set"
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = OutlineVariant.copy(alpha = 0.3f)
+                            )
+                            ProfileInfoRow(
+                                label = "Weight",
+                                value = if (uiState.editWeight.isNotBlank()) "${uiState.editWeight} kg" else "Not set"
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = OutlineVariant.copy(alpha = 0.3f)
+                            )
+                            ProfileInfoRow(
+                                label = "Fitness Goal",
+                                value = uiState.editGoal.ifBlank { "Not set" }
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                // ── EDIT VIEW (when editing) ────────────────────────────────
+                AnimatedVisibility(
+                    visible = uiState.isEditing,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column {
+                        EliteInputField(
+                            value = uiState.editName,
+                            onValueChange = viewModel::updateName,
+                            label = "Display Name",
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                EliteInputField(
-                    value = uiState.editGoal,
-                    onValueChange = viewModel::updateGoal,
-                    label = "Fitness Goal",
-                    modifier = Modifier.fillMaxWidth()
-                )
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                if (uiState.error != null) {
-                    Text(
-                        text = uiState.error ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Error,
-                        modifier = Modifier
-                            .align(Alignment.Start)
-                            .padding(top = 12.dp)
-                    )
+                        EliteInputField(
+                            value = uiState.editPhone,
+                            onValueChange = viewModel::updatePhone,
+                            label = "Phone Number",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            EliteInputField(
+                                value = uiState.editHeight,
+                                onValueChange = viewModel::updateHeight,
+                                label = "Height (cm)",
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            EliteInputField(
+                                value = uiState.editWeight,
+                                onValueChange = viewModel::updateWeight,
+                                label = "Weight (kg)",
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        EliteInputField(
+                            value = uiState.editGoal,
+                            onValueChange = viewModel::updateGoal,
+                            label = "Fitness Goal",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        if (uiState.error != null) {
+                            Text(
+                                text = uiState.error ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Error,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
+                        }
+
+                        if (uiState.success) {
+                            Text(
+                                text = "Profile updated successfully!",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Secondary,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        PrimaryButton(
+                            text = "Save Changes",
+                            onClick = { viewModel.saveProfile() },
+                            isLoading = uiState.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedButton(
+                            onClick = { viewModel.cancelEdit() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(28.dp)
+                        ) {
+                            Text(text = "Cancel", color = OnSurfaceVariant)
+                        }
+                    }
                 }
-
-                if (uiState.success) {
-                    Text(
-                        text = "Profile updated successfully!",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Secondary,
-                        modifier = Modifier
-                            .align(Alignment.Start)
-                            .padding(top = 12.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                PrimaryButton(
-                    text = "Save Changes",
-                    onClick = { viewModel.saveProfile() },
-                    isLoading = uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth()
-                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -353,6 +487,34 @@ fun AccountScreen(
             },
             containerColor = SurfaceContainerLowest,
             shape = RoundedCornerShape(28.dp)
+        )
+    }
+}
+
+/**
+ * Read-only profile info row for displaying data when not in edit mode.
+ */
+@Composable
+fun ProfileInfoRow(
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = OnSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = OnSurface,
         )
     }
 }

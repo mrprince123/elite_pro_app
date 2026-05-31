@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.elite_fitness_app"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -105,6 +105,9 @@ dependencies {
     // Media3 / ExoPlayer
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
+
+    // Health Connect
+    implementation(libs.health.connect.client)
 
     // Testing
     testImplementation(libs.junit)

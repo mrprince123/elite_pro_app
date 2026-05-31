@@ -1,13 +1,19 @@
 package com.example.elite_fitness_app.presentation.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -171,15 +177,63 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            EliteInputField(
-                value = uiState.registerFitnessGoal,
-                onValueChange = viewModel::updateRegisterFitnessGoal,
-                label = "Fitness Goal",
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Done,
-                onImeAction = { viewModel.register() },
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Fitness Goal Dropdown Selector
+            var expandedGoal by remember { mutableStateOf(false) }
+            val fitnessGoalOptions = listOf("Weight Loss", "Muscle Gain", "Endurance", "Flexibility", "General Fitness")
+            
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Fitness Goal",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = OnSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SurfaceContainerLow)
+                        .border(1.dp, OutlineVariant, RoundedCornerShape(12.dp))
+                        .clickable { expandedGoal = true }
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = uiState.registerFitnessGoal.ifBlank { "Select Fitness Goal" },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (uiState.registerFitnessGoal.isBlank()) OnSurfaceVariant.copy(alpha = 0.6f) else OnSurface
+                        )
+                        Icon(
+                            imageVector = if (expandedGoal) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = OnSurfaceVariant
+                        )
+                    }
+                }
+                DropdownMenu(
+                    expanded = expandedGoal,
+                    onDismissRequest = { expandedGoal = false },
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .background(SurfaceContainerLowest)
+                ) {
+                    fitnessGoalOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(text = option) },
+                            onClick = {
+                                viewModel.updateRegisterFitnessGoal(option)
+                                expandedGoal = false
+                            }
+                        )
+                    }
+                }
+            }
 
             if (uiState.error != null) {
                 Text(

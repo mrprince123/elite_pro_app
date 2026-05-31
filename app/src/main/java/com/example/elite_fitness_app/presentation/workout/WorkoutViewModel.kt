@@ -28,7 +28,8 @@ data class WorkoutUiState(
     val newWorkoutDuration: Int = 45,
     val addedExercises: List<WorkoutExercise> = emptyList(),
     val shouldNavigateToLibrary: Boolean = false,
-    val favorites: List<Favorite> = emptyList()
+    val favorites: List<Favorite> = emptyList(),
+    val isAddingExercise: Boolean = false
 )
 
 @HiltViewModel
@@ -81,6 +82,8 @@ class WorkoutViewModel @Inject constructor(
     fun updateDifficulty(diff: String) = _uiState.update { it.copy(newWorkoutDifficulty = diff) }
     fun updateDuration(duration: Int) = _uiState.update { it.copy(newWorkoutDuration = duration) }
     fun setNavigateToLibrary(shouldNavigate: Boolean) = _uiState.update { it.copy(shouldNavigateToLibrary = shouldNavigate) }
+    fun startAddingExercise() = _uiState.update { it.copy(isAddingExercise = true) }
+    fun stopAddingExercise() = _uiState.update { it.copy(isAddingExercise = false) }
 
     fun addExerciseToNewWorkout(exerciseId: String, name: String) {
         val exercise = WorkoutExercise(

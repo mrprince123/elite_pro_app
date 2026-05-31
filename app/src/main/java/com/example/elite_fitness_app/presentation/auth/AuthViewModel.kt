@@ -96,6 +96,15 @@ class AuthViewModel @Inject constructor(
             _uiState.update { it.copy(error = "Passwords do not match") }
             return
         }
+        val apiGoal = when (state.registerFitnessGoal.trim().lowercase()) {
+            "weight loss", "weight_loss" -> "weight_loss"
+            "muscle gain", "muscle_gain" -> "muscle_gain"
+            "endurance" -> "endurance"
+            "flexibility" -> "flexibility"
+            "general fitness", "general_fitness" -> "general_fitness"
+            else -> "general_fitness"
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             when (val result = authRepository.register(
@@ -105,7 +114,7 @@ class AuthViewModel @Inject constructor(
                 password = state.registerPassword,
                 height = state.registerHeight.toDoubleOrNull(),
                 weight = state.registerWeight.toDoubleOrNull(),
-                fitnessGoal = state.registerFitnessGoal.ifBlank { null },
+                fitnessGoal = apiGoal,
             )) {
                 is Resource.Success -> {
                     _uiState.update {

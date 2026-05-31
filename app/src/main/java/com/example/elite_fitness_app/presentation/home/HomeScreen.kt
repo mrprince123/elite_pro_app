@@ -1,5 +1,6 @@
 package com.example.elite_fitness_app.presentation.home
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,19 +18,27 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.outlined.DirectionsWalk
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.health.connect.client.PermissionController
+import kotlinx.coroutines.launch
 import com.example.elite_fitness_app.domain.model.TrainingPlan
 import com.example.elite_fitness_app.domain.model.Workout
 import com.example.elite_fitness_app.presentation.components.GlassCard
@@ -49,6 +58,24 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val requestPermissionActivityContract = PermissionController.createRequestPermissionResultContract()
+    val requestPermissionsLauncher = rememberLauncherForActivityResult(requestPermissionActivityContract) { granted ->
+        viewModel.syncHealthData(context)
+    }
+
+    // Auto-sync health data on first load
+    LaunchedEffect(Unit) {
+        if (!uiState.healthSynced) {
+            val hasPermissions = viewModel.hasHealthPermissions(context)
+            if (hasPermissions) {
+                viewModel.syncHealthData(context)
+            } else if (viewModel.isHealthConnectAvailable(context)) {
+                requestPermissionsLauncher.launch(com.example.elite_fitness_app.core.utils.HealthConnectManager.PERMISSIONS)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -69,20 +96,32 @@ fun HomeScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Profile avatar placeholder
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(SurfaceContainerHigh),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = (uiState.user?.name?.firstOrNull()?.uppercase() ?: "V"),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Primary,
-                        fontWeight = FontWeight.Bold
+                // Profile avatar - show image if available, else initials
+                val profileImage = uiState.user?.profileImage
+                if (!profileImage.isNullOrBlank()) {
+                    AsyncImage(
+                        model = profileImage,
+                        contentDescription = "Profile",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(SurfaceContainerHigh),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = (uiState.user?.name?.firstOrNull()?.uppercase() ?: "V"),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -106,7 +145,19 @@ fun HomeScreen(
             }
 
             // Dashboard Stats — Central Ring + Metrics
-            DashboardStats(uiState = uiState)
+            DashboardStats(
+                uiState = uiState,
+                onSyncClick = {
+                    coroutineScope.launch {
+                        val hasPermissions = viewModel.hasHealthPermissions(context)
+                        if (hasPermissions) {
+                            viewModel.syncHealthData(context)
+                        } else {
+                            requestPermissionsLauncher.launch(com.example.elite_fitness_app.core.utils.HealthConnectManager.PERMISSIONS)
+                        }
+                    }
+                }
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -258,14 +309,43 @@ fun SectionHeader(
 }
 
 @Composable
-fun DashboardStats(uiState: HomeUiState) {
-    val calories = (uiState.stats["totalCalories"] as? Number)?.toInt() ?: 0
-    val duration = (uiState.stats["totalDuration"] as? Number)?.toInt() ?: 0
-    val sessions = (uiState.stats["totalSessions"] as? Number)?.toInt() ?: 0
+fun DashboardStats(
+    uiState: HomeUiState,
+    onSyncClick: () -> Unit = {}
+) {
+    // Use Health Connect data if synced, otherwise fall back to API stats
+    val healthData = uiState.healthData
+    val steps = if (uiState.healthSynced) healthData.steps else {
+        val calories = (uiState.stats["totalCalories"] as? Number)?.toInt() ?: 0
+        (calories * 3).toLong().coerceAtMost(10000)
+    }
+    val activeMinutes = if (uiState.healthSynced) healthData.activeMinutes else {
+        (uiState.stats["totalDuration"] as? Number)?.toLong() ?: 0L
+    }
+    val heartPoints = if (uiState.healthSynced) healthData.heartPoints else {
+        (uiState.stats["totalSessions"] as? Number)?.toInt() ?: 0
+    }
+    val caloriesBurned = if (uiState.healthSynced) healthData.caloriesBurned else {
+        (uiState.stats["totalCalories"] as? Number)?.toDouble() ?: 0.0
+    }
+    val distanceKm = if (uiState.healthSynced) healthData.distanceKm else {
+        steps * 0.00075
+    }
 
     val targetSteps = 10000
-    val steps = (calories * 3).coerceAtMost(targetSteps) // Approximate steps from calories
     val progress = (steps.toFloat() / targetSteps.toFloat()).coerceIn(0f, 1f)
+
+    // Sync icon rotation animation
+    val infiniteTransition = rememberInfiniteTransition(label = "sync_rotation")
+    val syncRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "sync_rotation"
+    )
 
     Column(
         modifier = Modifier.padding(horizontal = 20.dp)
@@ -276,6 +356,30 @@ fun DashboardStats(uiState: HomeUiState) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // Sync button row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(
+                        onClick = onSyncClick,
+                        enabled = !uiState.isSyncingHealth
+                    ) {
+                        Icon(
+                            Icons.Default.Sync,
+                            contentDescription = "Sync Health Data",
+                            tint = if (uiState.isSyncingHealth) OnSurfaceVariant else Primary,
+                            modifier = if (uiState.isSyncingHealth) {
+                                Modifier
+                                    .size(22.dp)
+                                    .rotate(syncRotation)
+                            } else {
+                                Modifier.size(22.dp)
+                            }
+                        )
+                    }
+                }
+
                 ProgressRing(
                     progress = progress,
                     size = 140.dp,
@@ -300,70 +404,146 @@ fun DashboardStats(uiState: HomeUiState) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnSurfaceVariant,
                 )
+
+                // Show simulated badge if data is simulated
+                if (uiState.healthSynced && healthData.isSimulated) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Simulated • Install Health Connect for real data",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Mini metrics row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        // Mini metrics rows
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Move Minutes
             Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    Icons.Default.Timer,
-                    contentDescription = null,
-                    tint = ActivityBlue,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "$duration",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    color = OnSurface,
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "MOVE MIN",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariant,
-                )
+                // Move Minutes
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Timer,
+                        contentDescription = null,
+                        tint = ActivityBlue,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "$activeMinutes",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = OnSurface,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "MINS",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceVariant,
+                    )
+                }
+
+                // Heart Points
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = ActivityGreen,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "$heartPoints",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = OnSurface,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "HEART PTS",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceVariant,
+                    )
+                }
             }
 
-            // Heart Points
             Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = ActivityGreen,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "$sessions",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    color = OnSurface,
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "HEART PTS",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariant,
-                )
+                // Calories Burned
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Whatshot,
+                        contentDescription = null,
+                        tint = ActivityRed,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "%.0f".format(caloriesBurned),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = OnSurface,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "KCAL",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceVariant,
+                    )
+                }
+
+                // Distance Km
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.DirectionsRun,
+                        contentDescription = null,
+                        tint = ActivityYellow,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "%.2f".format(distanceKm),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = OnSurface,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "KM",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceVariant,
+                    )
+                }
             }
         }
     }

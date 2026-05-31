@@ -99,7 +99,7 @@ fun WorkoutSessionDto.toDomain() = WorkoutSession(
 )
 
 // ─── Notification Mappers ─────────────────────────────────────────────────
-fun NotificationDto.toDomain() = com.example.elite_fitness_app.domain.model.Notification(
+fun NotificationDto.toDomain() = Notification(
     id = id ?: "",
     title = title ?: "",
     body = body ?: "",
@@ -109,7 +109,7 @@ fun NotificationDto.toDomain() = com.example.elite_fitness_app.domain.model.Noti
 )
 
 // ─── Favorite Mappers ─────────────────────────────────────────────────────
-fun com.example.elite_fitness_app.data.dto.FavoriteDto.toDomain() = com.example.elite_fitness_app.domain.model.Favorite(
+fun FavoriteDto.toDomain() = Favorite(
     id = id ?: "",
     userId = userId ?: "",
     type = type ?: "",

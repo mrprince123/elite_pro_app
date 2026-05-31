@@ -52,6 +52,9 @@ splashscreen = "1.0.1"
 # ExoPlayer / Media3
 media3 = "1.6.1"
 
+# Health Connect
+healthConnect = "1.1.0-alpha12"
+
 [libraries]
 # Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -122,6 +125,9 @@ splashscreen = { group = "androidx.core", name = "core-splashscreen", version.re
 # Media3 / ExoPlayer
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
+
+# Health Connect
+health-connect-client = { group = "androidx.health.connect", name = "connect-client", version.ref = "healthConnect" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

@@ -145,6 +145,7 @@ fun WorkoutDetailScreen(
                     )
 
                     TextButton(onClick = {
+                        viewModel.startAddingExercise()
                         viewModel.setNavigateToLibrary(true)
                         onAddExerciseNavigate()
                     }) {

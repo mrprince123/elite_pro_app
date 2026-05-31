@@ -36,7 +36,25 @@ private fun parseErrorMessage(errorBody: String?): String? {
     if (errorBody.isNullOrBlank()) return null
     return try {
         val json = com.google.gson.JsonParser.parseString(errorBody).asJsonObject
-        json.get("message")?.asString
+        val baseMessage = json.get("message")?.asString
+        val errorsArray = json.getAsJsonArray("errors")
+        if (errorsArray != null && errorsArray.size() > 0) {
+            val detailedMessages = mutableListOf<String>()
+            for (element in errorsArray) {
+                val errObj = element.asJsonObject
+                val field = errObj.get("field")?.asString ?: ""
+                val msg = errObj.get("message")?.asString ?: ""
+                if (field.isNotEmpty() && msg.isNotEmpty()) {
+                    detailedMessages.add("$field: $msg")
+                } else if (msg.isNotEmpty()) {
+                    detailedMessages.add(msg)
+                }
+            }
+            if (detailedMessages.isNotEmpty()) {
+                return detailedMessages.joinToString("\n")
+            }
+        }
+        baseMessage
     } catch (e: Exception) {
         null
     }

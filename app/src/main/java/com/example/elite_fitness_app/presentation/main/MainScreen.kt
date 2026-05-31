@@ -85,7 +85,13 @@ fun MainScreen(
 
     Scaffold(
         bottomBar = {
-            BottomNavigation(navController = navController, items = items)
+            BottomNavigation(
+                navController = navController,
+                items = items,
+                onItemClick = {
+                    workoutViewModel.stopAddingExercise()
+                }
+            )
         },
         containerColor = Surface
     ) { innerPadding ->
@@ -147,7 +153,8 @@ fun MainScreen(
 @Composable
 fun BottomNavigation(
     navController: NavController,
-    items: List<BottomNavItem>
+    items: List<BottomNavItem>,
+    onItemClick: () -> Unit
 ) {
     NavigationBar(
         modifier = Modifier
@@ -171,6 +178,7 @@ fun BottomNavigation(
                     unselectedTextColor = OnSurfaceVariant
                 ),
                 onClick = {
+                    onItemClick()
                     if (currentRoute != item.route) {
                         navController.navigate(item.route) {
                             popUpTo(navController.graph.startDestinationId) {
