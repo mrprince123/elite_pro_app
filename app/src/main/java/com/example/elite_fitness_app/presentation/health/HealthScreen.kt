@@ -53,6 +53,7 @@ fun HealthScreen(
 
     // Auto-sync health data on load if permissions are granted
     LaunchedEffect(Unit) {
+        viewModel.loadUserProfile()
         val hasPermissions = viewModel.hasHealthPermissions(context)
         if (hasPermissions) {
             viewModel.syncHealthData(context)

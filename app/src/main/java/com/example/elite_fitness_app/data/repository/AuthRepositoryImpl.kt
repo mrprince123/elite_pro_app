@@ -36,10 +36,10 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun register(
         name: String, email: String, phone: String, password: String,
-        height: Double?, weight: Double?, fitnessGoal: String?
+        height: Double?, weight: Double?, fitnessGoal: String?, age: Int?
     ): Resource<AuthResponse> {
         val result = safeApiCall {
-            api.register(RegisterRequest(name, email, phone, password, height, weight, fitnessGoal))
+            api.register(RegisterRequest(name, email, phone, password, height, weight, fitnessGoal, age))
         }
         return when (result) {
             is Resource.Success -> {

@@ -10,6 +10,7 @@ data class Workout(
     val exercises: List<WorkoutExercise> = emptyList(),
     val isFavorite: Boolean = false,
     val createdAt: String = "",
+    val image: String? = null,
 )
 
 data class WorkoutExercise(

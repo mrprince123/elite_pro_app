@@ -13,13 +13,33 @@ import javax.inject.Inject
 
 data class ExerciseUiState(
     val isLoading: Boolean = false,
+    val isPaginatedLoading: Boolean = false,
     val exercises: List<Exercise> = emptyList(),
     val currentExercise: Exercise? = null,
     val favorites: List<com.example.elite_fitness_app.domain.model.Favorite> = emptyList(),
     val error: String? = null,
     val searchQuery: String = "",
     val selectedBodyPart: String = "All",
-    val bodyParts: List<String> = listOf("All", "chest", "back", "cardio", "lower arms", "lower legs", "neck", "shoulders", "upper arms", "upper legs", "waist")
+    val bodyParts: List<String> = listOf("All",
+    "Chest",
+    "Back",
+    "Shoulders",
+    "Biceps",
+    "Triceps",
+    "Forearms",
+    "Abs",
+    "Obliques",
+    "Lower Back",
+    "Glutes",
+    "Quadriceps",
+    "Hamstrings",
+    "Calves",
+    "Traps",
+    "Neck",
+    "Cardio",
+    "Full Body"),
+    val currentPage: Int = 1,
+    val isEndReached: Boolean = false
 )
 
 @HiltViewModel
@@ -40,20 +60,57 @@ class ExerciseViewModel @Inject constructor(
 
     fun loadExercises() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, currentPage = 1, isEndReached = false) }
             val selected = _uiState.value.selectedBodyPart
             val result = if (selected == "All") {
-                exerciseRepository.getExercises(page = 1, limit = 50)
+                exerciseRepository.getExercises(page = 1, limit = 20)
             } else {
                 exerciseRepository.getExercisesByBodyPart(selected)
             }
 
             when (result) {
                 is Resource.Success -> {
-                    _uiState.update { it.copy(isLoading = false, exercises = result.data) }
+                    _uiState.update { 
+                        it.copy(
+                            isLoading = false, 
+                            exercises = result.data,
+                            isEndReached = if (selected == "All") result.data.size < 20 else true
+                        ) 
+                    }
                 }
                 is Resource.Error -> {
                     _uiState.update { it.copy(isLoading = false, error = result.message) }
+                }
+                is Resource.Loading -> {}
+            }
+        }
+    }
+
+    fun loadNextPage() {
+        val currentState = _uiState.value
+        if (currentState.isLoading || currentState.isPaginatedLoading || currentState.isEndReached || currentState.selectedBodyPart != "All" || currentState.searchQuery.isNotEmpty()) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPaginatedLoading = true, error = null) }
+            val nextPage = currentState.currentPage + 1
+            val result = exerciseRepository.getExercises(page = nextPage, limit = 20)
+
+            when (result) {
+                is Resource.Success -> {
+                    val newExercises = result.data
+                    _uiState.update {
+                        it.copy(
+                            isPaginatedLoading = false,
+                            exercises = it.exercises + newExercises,
+                            currentPage = nextPage,
+                            isEndReached = newExercises.size < 20
+                        )
+                    }
+                }
+                is Resource.Error -> {
+                    _uiState.update { it.copy(isPaginatedLoading = false, error = result.message) }
                 }
                 is Resource.Loading -> {}
             }
@@ -102,7 +159,7 @@ class ExerciseViewModel @Inject constructor(
     }
 
     private suspend fun performSearch(query: String) {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(isLoading = true, error = null, currentPage = 1, isEndReached = true) }
         when (val result = exerciseRepository.searchExercises(query)) {
             is Resource.Success -> {
                 _uiState.update { it.copy(isLoading = false, exercises = result.data) }

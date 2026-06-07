@@ -177,6 +177,17 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            EliteInputField(
+                value = uiState.registerAge,
+                onValueChange = viewModel::updateRegisterAge,
+                label = "Age (years)",
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Fitness Goal Dropdown Selector
             var expandedGoal by remember { mutableStateOf(false) }
             val fitnessGoalOptions = listOf("Weight Loss", "Muscle Gain", "Endurance", "Flexibility", "General Fitness")

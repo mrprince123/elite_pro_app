@@ -190,17 +190,6 @@ fun AccountScreen(
                                 }
                             }
                         }
-
-                        // Edit / Close button
-                        IconButton(onClick = {
-                            if (uiState.isEditing) viewModel.cancelEdit() else viewModel.toggleEditMode()
-                        }) {
-                            Icon(
-                                if (uiState.isEditing) Icons.Default.Close else Icons.Default.Edit,
-                                contentDescription = if (uiState.isEditing) "Cancel Edit" else "Edit",
-                                tint = if (uiState.isEditing) Error else OnSurfaceVariant
-                            )
-                        }
                     }
                 }
 
@@ -247,146 +236,56 @@ fun AccountScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ── READ-ONLY VIEW (when not editing) ───────────────────────
-                AnimatedVisibility(
-                    visible = !uiState.isEditing,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
-                    ) {
-                        Column {
-                            ProfileInfoRow(
-                                label = "Display Name",
-                                value = uiState.editName.ifBlank { "Not set" }
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = OutlineVariant.copy(alpha = 0.3f)
-                            )
-                            ProfileInfoRow(
-                                label = "Phone Number",
-                                value = uiState.editPhone.ifBlank { "Not set" }
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = OutlineVariant.copy(alpha = 0.3f)
-                            )
-                            ProfileInfoRow(
-                                label = "Height",
-                                value = if (uiState.editHeight.isNotBlank()) "${uiState.editHeight} cm" else "Not set"
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = OutlineVariant.copy(alpha = 0.3f)
-                            )
-                            ProfileInfoRow(
-                                label = "Weight",
-                                value = if (uiState.editWeight.isNotBlank()) "${uiState.editWeight} kg" else "Not set"
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = OutlineVariant.copy(alpha = 0.3f)
-                            )
-                            ProfileInfoRow(
-                                label = "Fitness Goal",
-                                value = uiState.editGoal.ifBlank { "Not set" }
-                            )
-                        }
-                    }
-                }
-
-                // ── EDIT VIEW (when editing) ────────────────────────────────
-                AnimatedVisibility(
-                    visible = uiState.isEditing,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
                 ) {
                     Column {
-                        EliteInputField(
-                            value = uiState.editName,
-                            onValueChange = viewModel::updateName,
+                        ProfileInfoRow(
                             label = "Display Name",
-                            modifier = Modifier.fillMaxWidth()
+                            value = uiState.editName.ifBlank { "Not set" }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        EliteInputField(
-                            value = uiState.editPhone,
-                            onValueChange = viewModel::updatePhone,
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = OutlineVariant.copy(alpha = 0.3f)
+                        )
+                        ProfileInfoRow(
                             label = "Phone Number",
-                            modifier = Modifier.fillMaxWidth()
+                            value = uiState.editPhone.ifBlank { "Not set" }
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            EliteInputField(
-                                value = uiState.editHeight,
-                                onValueChange = viewModel::updateHeight,
-                                label = "Height (cm)",
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            EliteInputField(
-                                value = uiState.editWeight,
-                                onValueChange = viewModel::updateWeight,
-                                label = "Weight (kg)",
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        EliteInputField(
-                            value = uiState.editGoal,
-                            onValueChange = viewModel::updateGoal,
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = OutlineVariant.copy(alpha = 0.3f)
+                        )
+                        ProfileInfoRow(
+                            label = "Age",
+                            value = if (uiState.editAge.isNotBlank()) "${uiState.editAge} years" else "Not set"
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = OutlineVariant.copy(alpha = 0.3f)
+                        )
+                        ProfileInfoRow(
+                            label = "Height",
+                            value = if (uiState.editHeight.isNotBlank()) "${uiState.editHeight} cm" else "Not set"
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = OutlineVariant.copy(alpha = 0.3f)
+                        )
+                        ProfileInfoRow(
+                            label = "Weight",
+                            value = if (uiState.editWeight.isNotBlank()) "${uiState.editWeight} kg" else "Not set"
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = OutlineVariant.copy(alpha = 0.3f)
+                        )
+                        ProfileInfoRow(
                             label = "Fitness Goal",
-                            modifier = Modifier.fillMaxWidth()
+                            value = uiState.editGoal.ifBlank { "Not set" }
                         )
-
-                        if (uiState.error != null) {
-                            Text(
-                                text = uiState.error ?: "",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Error,
-                                modifier = Modifier.padding(top = 12.dp)
-                            )
-                        }
-
-                        if (uiState.success) {
-                            Text(
-                                text = "Profile updated successfully!",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Secondary,
-                                modifier = Modifier.padding(top = 12.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        PrimaryButton(
-                            text = "Save Changes",
-                            onClick = { viewModel.saveProfile() },
-                            isLoading = uiState.isLoading,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedButton(
-                            onClick = { viewModel.cancelEdit() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(28.dp)
-                        ) {
-                            Text(text = "Cancel", color = OnSurfaceVariant)
-                        }
                     }
                 }
 
@@ -408,12 +307,6 @@ fun AccountScreen(
                     colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
                 ) {
                     SettingsRow(icon = Icons.Default.Favorite, title = "Favorites & Likes", onClick = onNavigateToFavorites)
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = OutlineVariant.copy(alpha = 0.3f))
-                    SettingsRow(icon = Icons.Default.Person, title = "Personal Information", onClick = onNavigateToSettings)
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = OutlineVariant.copy(alpha = 0.3f))
-                    SettingsRow(icon = Icons.Default.Notifications, title = "Notifications", onClick = onNavigateToSettings)
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = OutlineVariant.copy(alpha = 0.3f))
-                    SettingsRow(icon = Icons.Default.Lock, title = "Privacy & Security", onClick = onNavigateToSettings)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

@@ -8,6 +8,8 @@ import com.example.elite_fitness_app.data.remote.ApiService
 import com.example.elite_fitness_app.domain.model.User
 import com.example.elite_fitness_app.domain.repository.UserRepository
 import com.example.elite_fitness_app.data.dto.UserDto
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,6 +51,17 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun deleteAccount(): Resource<Unit> {
         return when (val result = safeApiCall { api.deleteAccount() }) {
             is Resource.Success -> Resource.Success(Unit)
+            is Resource.Error -> Resource.Error(result.message, result.code)
+            is Resource.Loading -> Resource.Loading
+        }
+    }
+
+    override suspend fun uploadProfileImage(file: java.io.File): Resource<User> {
+        val mediaType = "image/*".toMediaTypeOrNull()
+        val requestFile = file.asRequestBody(mediaType)
+        val body = okhttp3.MultipartBody.Part.createFormData("image", file.name, requestFile)
+        return when (val result = safeApiCall { api.uploadProfileImage(body) }) {
+            is Resource.Success -> Resource.Success(result.data.data!!.toDomain())
             is Resource.Error -> Resource.Error(result.message, result.code)
             is Resource.Loading -> Resource.Loading
         }

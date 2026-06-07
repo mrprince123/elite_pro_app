@@ -240,10 +240,15 @@ fun AppNavHost(
                 )
             }
 
-            composable(Screen.Settings.route) {
+            composable(Screen.Settings.route) { backStackEntry ->
                 val settingsViewModel: SettingsViewModel = hiltViewModel()
+                val mainEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(NavGraph.MAIN)
+                }
+                val accountViewModel: AccountViewModel = hiltViewModel(mainEntry)
                 SettingsScreen(
                     viewModel = settingsViewModel,
+                    accountViewModel = accountViewModel,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

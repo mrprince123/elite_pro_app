@@ -568,50 +568,7 @@ fun ExerciseDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Weekly Goal Progress Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceContainerHigh)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            ProgressRing(
-                                progress = 0.7f,
-                                size = 56.dp,
-                                strokeWidth = 6.dp,
-                                color = Primary,
-                                label = "70%"
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(
-                                    text = "Weekly Goal Progress",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = OnSurface,
-                                )
-                                Text(
-                                    text = "You've completed 7 out of 10 strength sessions this week.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = OnSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
 
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Start Workout Session button
-                    PrimaryButton(
-                        text = "Start Workout Session",
-                        onClick = { },
-                        icon = Icons.Default.PlayArrow,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             }
         }

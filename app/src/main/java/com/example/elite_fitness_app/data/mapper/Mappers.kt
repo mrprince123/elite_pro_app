@@ -59,6 +59,7 @@ fun WorkoutDto.toDomain() = Workout(
     exercises = exercises?.map { it.toDomain() } ?: emptyList(),
     isFavorite = isFavorite ?: false,
     createdAt = createdAt ?: "",
+    image = image,
 )
 
 fun Workout.toCreateRequest() = CreateWorkoutRequest(

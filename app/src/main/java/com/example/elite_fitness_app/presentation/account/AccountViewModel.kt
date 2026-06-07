@@ -32,6 +32,7 @@ data class AccountUiState(
     val editHeight: String = "",
     val editWeight: String = "",
     val editGoal: String = "",
+    val editAge: String = "",
     val isLoggedOut: Boolean = false,
     val isEditing: Boolean = false,
     val profileImageUri: String? = null // Local file URI for display
@@ -65,6 +66,7 @@ class AccountViewModel @Inject constructor(
                             editHeight = u.height?.toString() ?: "",
                             editWeight = u.weight?.toString() ?: "",
                             editGoal = u.fitnessGoal ?: "",
+                            editAge = u.age?.toString() ?: "",
                             profileImageUri = u.profileImage
                         )
                     }
@@ -82,6 +84,7 @@ class AccountViewModel @Inject constructor(
     fun updateHeight(h: String) = _uiState.update { it.copy(editHeight = h) }
     fun updateWeight(w: String) = _uiState.update { it.copy(editWeight = w) }
     fun updateGoal(g: String) = _uiState.update { it.copy(editGoal = g) }
+    fun updateAge(age: String) = _uiState.update { it.copy(editAge = age) }
 
     fun toggleEditMode() {
         _uiState.update { it.copy(isEditing = !it.isEditing, success = false, error = null) }
@@ -99,6 +102,7 @@ class AccountViewModel @Inject constructor(
                 editHeight = user?.height?.toString() ?: "",
                 editWeight = user?.weight?.toString() ?: "",
                 editGoal = user?.fitnessGoal ?: "",
+                editAge = user?.age?.toString() ?: "",
                 profileImageUri = user?.profileImage
             )
         }
@@ -110,6 +114,7 @@ class AccountViewModel @Inject constructor(
     fun onProfileImageSelected(uri: Uri, context: Context) {
         viewModelScope.launch {
             try {
+                _uiState.update { it.copy(isLoading = true, error = null) }
                 val inputStream = context.contentResolver.openInputStream(uri) ?: return@launch
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream.close()
@@ -123,30 +128,35 @@ class AccountViewModel @Inject constructor(
                     scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
                 }
 
-                // Convert to base64 for API upload
-                val baos = ByteArrayOutputStream()
-                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos)
-                val base64String = "data:image/jpeg;base64," +
-                        Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
-
-                _uiState.update {
-                    it.copy(
-                        profileImageUri = localFile.toURI().toString()
-                    )
+                // Immediately upload profile image using multipart
+                when (val result = userRepository.uploadProfileImage(localFile)) {
+                    is Resource.Success -> {
+                        val updatedUser = result.data
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                user = updatedUser,
+                                profileImageUri = updatedUser.profileImage
+                            )
+                        }
+                        Timber.d("Profile image uploaded and state updated: ${updatedUser.profileImage}")
+                    }
+                    is Resource.Error -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            )
+                        }
+                        Timber.e("Failed to upload profile image: ${result.message}")
+                    }
+                    else -> {
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
                 }
-
-                // Update the user model's profileImage with base64 for server sync
-                val currentUser = _uiState.value.user ?: return@launch
-                _uiState.update {
-                    it.copy(
-                        user = currentUser.copy(profileImage = base64String)
-                    )
-                }
-
-                Timber.d("Profile image processed and saved locally")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to process profile image")
-                _uiState.update { it.copy(error = "Failed to process image") }
+                _uiState.update { it.copy(isLoading = false, error = "Failed to process image") }
             }
         }
     }
@@ -167,6 +177,7 @@ class AccountViewModel @Inject constructor(
             phone = state.editPhone,
             height = state.editHeight.toDoubleOrNull(),
             weight = state.editWeight.toDoubleOrNull(),
+            age = state.editAge.toIntOrNull(),
             fitnessGoal = state.editGoal
         )
 

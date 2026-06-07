@@ -1,5 +1,10 @@
 package com.example.elite_fitness_app.presentation.workout
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -396,6 +401,13 @@ fun CreateRoutineDialog(
     onCreated: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.updateNewWorkoutImage(it.toString()) }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -408,6 +420,41 @@ fun CreateRoutineDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Cover Image Selector
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SurfaceContainerLow)
+                        .border(1.dp, OutlineVariant, RoundedCornerShape(12.dp))
+                        .clickable {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!uiState.newWorkoutImageUri.isNullOrBlank()) {
+                        AsyncImage(
+                            model = uiState.newWorkoutImageUri,
+                            contentDescription = "Cover Image Preview",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "📸", style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Select Cover Image",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = OnSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
                 EliteInputField(
                     value = uiState.newWorkoutName,
                     onValueChange = viewModel::updateName,
@@ -487,7 +534,7 @@ fun CreateRoutineDialog(
             PrimaryButton(
                 text = "Create",
                 onClick = {
-                    viewModel.createWorkout {
+                    viewModel.createWorkout(context) {
                         onCreated()
                     }
                 },
@@ -683,7 +730,7 @@ fun RoutineGridCard(
                     .height(120.dp)
             ) {
                 AsyncImage(
-                    model = getWorkoutImage(workout.name),
+                    model = workout.image?.ifBlank { null } ?: getWorkoutImage(workout.name),
                     contentDescription = workout.name,
                     modifier = Modifier
                         .fillMaxSize()

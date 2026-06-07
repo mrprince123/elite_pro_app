@@ -9,4 +9,5 @@ interface WorkoutRepository {
     suspend fun createWorkout(workout: Workout): Resource<Workout>
     suspend fun updateWorkout(id: String, workout: Workout): Resource<Workout>
     suspend fun deleteWorkout(id: String): Resource<Unit>
+    suspend fun uploadWorkoutImage(id: String, file: java.io.File): Resource<Workout>
 }

@@ -1,5 +1,11 @@
 package com.example.elite_fitness_app.presentation.workout
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import java.io.File
+import java.io.FileOutputStream
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.elite_fitness_app.core.utils.Resource
@@ -26,6 +32,7 @@ data class WorkoutUiState(
     val newWorkoutDesc: String = "",
     val newWorkoutDifficulty: String = "Intermediate",
     val newWorkoutDuration: Int = 45,
+    val newWorkoutImageUri: String? = null,
     val addedExercises: List<WorkoutExercise> = emptyList(),
     val shouldNavigateToLibrary: Boolean = false,
     val favorites: List<Favorite> = emptyList(),
@@ -81,6 +88,7 @@ class WorkoutViewModel @Inject constructor(
     fun updateDesc(desc: String) = _uiState.update { it.copy(newWorkoutDesc = desc) }
     fun updateDifficulty(diff: String) = _uiState.update { it.copy(newWorkoutDifficulty = diff) }
     fun updateDuration(duration: Int) = _uiState.update { it.copy(newWorkoutDuration = duration) }
+    fun updateNewWorkoutImage(uri: String?) = _uiState.update { it.copy(newWorkoutImageUri = uri) }
     fun setNavigateToLibrary(shouldNavigate: Boolean) = _uiState.update { it.copy(shouldNavigateToLibrary = shouldNavigate) }
     fun startAddingExercise() = _uiState.update { it.copy(isAddingExercise = true) }
     fun stopAddingExercise() = _uiState.update { it.copy(isAddingExercise = false) }
@@ -123,19 +131,19 @@ class WorkoutViewModel @Inject constructor(
         }
     }
 
-    fun createWorkout(onSuccess: () -> Unit) {
+    fun createWorkout(context: Context, onSuccess: () -> Unit) {
         val state = _uiState.value
         if (state.newWorkoutName.isBlank()) {
             _uiState.update { it.copy(error = "Workout name cannot be empty") }
             return
         }
-
+ 
         val backendDifficulty = when (state.newWorkoutDifficulty.trim().lowercase()) {
             "beginner" -> "beginner"
             "advanced" -> "advanced"
             else -> "intermediate"
         }
-
+ 
         val newWorkout = Workout(
             name = state.newWorkoutName,
             description = state.newWorkoutDesc,
@@ -143,17 +151,61 @@ class WorkoutViewModel @Inject constructor(
             estimatedDuration = state.newWorkoutDuration,
             exercises = state.addedExercises
         )
-
+ 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            
+            // Resolve local image file if present
+            var tempFile: File? = null
+            if (!state.newWorkoutImageUri.isNullOrBlank()) {
+                try {
+                    val uri = Uri.parse(state.newWorkoutImageUri)
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    if (inputStream != null) {
+                        val bitmap = BitmapFactory.decodeStream(inputStream)
+                        inputStream.close()
+                        
+                        val scaledBitmap = scaleBitmap(bitmap, 512) // 512x512 is plenty for routine cards
+                        val localFile = File(context.cacheDir, "temp_workout_cover.jpg")
+                        FileOutputStream(localFile).use { out ->
+                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
+                        }
+                        tempFile = localFile
+                    }
+                } catch (e: Exception) {
+                    timber.log.Timber.e(e, "Failed to prepare cover image file")
+                }
+            }
+ 
             when (val result = workoutRepository.createWorkout(newWorkout)) {
                 is Resource.Success -> {
+                    val createdWorkout = result.data
+                    
+                    // If we have a cover image to upload
+                    if (tempFile != null && createdWorkout.id.isNotBlank()) {
+                        when (val uploadResult = workoutRepository.uploadWorkoutImage(createdWorkout.id, tempFile)) {
+                            is Resource.Error -> {
+                                timber.log.Timber.e("Failed to upload cover image for workout: ${uploadResult.message}")
+                            }
+                            else -> {
+                                timber.log.Timber.d("Cover image uploaded successfully!")
+                            }
+                        }
+                        try {
+                            tempFile.delete()
+                        } catch (e: Exception) {
+                            // Ignore
+                        }
+                    }
+ 
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             newWorkoutName = "",
                             newWorkoutDesc = "",
                             newWorkoutDifficulty = "Intermediate",
+                            newWorkoutDuration = 45,
+                            newWorkoutImageUri = null,
                             addedExercises = emptyList()
                         )
                     }
@@ -166,6 +218,14 @@ class WorkoutViewModel @Inject constructor(
                 is Resource.Loading -> {}
             }
         }
+    }
+ 
+    private fun scaleBitmap(bitmap: Bitmap, maxSize: Int): Bitmap {
+        val ratio = minOf(maxSize.toFloat() / bitmap.width, maxSize.toFloat() / bitmap.height)
+        if (ratio >= 1f) return bitmap
+        val width = (bitmap.width * ratio).toInt()
+        val height = (bitmap.height * ratio).toInt()
+        return Bitmap.createScaledBitmap(bitmap, width, height, true)
     }
 
     fun deleteWorkout(id: String, onSuccess: () -> Unit) {

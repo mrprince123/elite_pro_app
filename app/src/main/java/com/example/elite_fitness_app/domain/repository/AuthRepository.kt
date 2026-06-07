@@ -13,7 +13,8 @@ interface AuthRepository {
         password: String,
         height: Double?,
         weight: Double?,
-        fitnessGoal: String?
+        fitnessGoal: String?,
+        age: Int?
     ): Resource<AuthResponse>
     suspend fun refreshToken(refreshToken: String): Resource<AuthResponse>
     suspend fun logout(): Resource<Unit>

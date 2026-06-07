@@ -8,4 +8,5 @@ interface UserRepository {
     suspend fun updateProfile(user: User): Resource<User>
     suspend fun changePassword(oldPassword: String, newPassword: String): Resource<Unit>
     suspend fun deleteAccount(): Resource<Unit>
+    suspend fun uploadProfileImage(file: java.io.File): Resource<User>
 }

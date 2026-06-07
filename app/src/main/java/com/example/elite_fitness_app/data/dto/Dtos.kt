@@ -23,6 +23,7 @@ data class RegisterRequest(
     @SerializedName("height") val height: Double?,
     @SerializedName("weight") val weight: Double?,
     @SerializedName("fitnessGoal") val fitnessGoal: String?,
+    @SerializedName("age") val age: Int?,
 )
 
 data class AuthResponseDto(
@@ -76,6 +77,7 @@ data class WorkoutDto(
     @SerializedName("exercises") val exercises: List<WorkoutExerciseDto>? = emptyList(),
     @SerializedName("isFavorite") val isFavorite: Boolean? = false,
     @SerializedName("createdAt") val createdAt: String? = "",
+    @SerializedName("image") val image: String? = null,
 )
 
 data class WorkoutExerciseDto(

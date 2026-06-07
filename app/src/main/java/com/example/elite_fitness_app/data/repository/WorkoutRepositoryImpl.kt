@@ -7,6 +7,8 @@ import com.example.elite_fitness_app.data.mapper.toCreateRequest
 import com.example.elite_fitness_app.data.remote.ApiService
 import com.example.elite_fitness_app.domain.model.Workout
 import com.example.elite_fitness_app.domain.repository.WorkoutRepository
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,6 +52,17 @@ class WorkoutRepositoryImpl @Inject constructor(
     override suspend fun deleteWorkout(id: String): Resource<Unit> {
         return when (val result = safeApiCall { api.deleteWorkout(id) }) {
             is Resource.Success -> Resource.Success(Unit)
+            is Resource.Error -> Resource.Error(result.message, result.code)
+            is Resource.Loading -> Resource.Loading
+        }
+    }
+
+    override suspend fun uploadWorkoutImage(id: String, file: java.io.File): Resource<Workout> {
+        val mediaType = "image/*".toMediaTypeOrNull()
+        val requestFile = file.asRequestBody(mediaType)
+        val body = okhttp3.MultipartBody.Part.createFormData("image", file.name, requestFile)
+        return when (val result = safeApiCall { api.uploadWorkoutImage(id, body) }) {
+            is Resource.Success -> Resource.Success(result.data.data!!.toDomain())
             is Resource.Error -> Resource.Error(result.message, result.code)
             is Resource.Loading -> Resource.Loading
         }

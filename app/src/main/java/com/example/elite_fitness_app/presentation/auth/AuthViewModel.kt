@@ -29,6 +29,7 @@ data class AuthUiState(
     val registerHeight: String = "",
     val registerWeight: String = "",
     val registerFitnessGoal: String = "",
+    val registerAge: String = "",
 )
 
 @HiltViewModel
@@ -85,6 +86,7 @@ class AuthViewModel @Inject constructor(
     fun updateRegisterHeight(height: String) = _uiState.update { it.copy(registerHeight = height) }
     fun updateRegisterWeight(weight: String) = _uiState.update { it.copy(registerWeight = weight) }
     fun updateRegisterFitnessGoal(goal: String) = _uiState.update { it.copy(registerFitnessGoal = goal) }
+    fun updateRegisterAge(age: String) = _uiState.update { it.copy(registerAge = age) }
 
     fun register() {
         val state = _uiState.value
@@ -115,6 +117,7 @@ class AuthViewModel @Inject constructor(
                 height = state.registerHeight.toDoubleOrNull(),
                 weight = state.registerWeight.toDoubleOrNull(),
                 fitnessGoal = apiGoal,
+                age = state.registerAge.toIntOrNull(),
             )) {
                 is Resource.Success -> {
                     _uiState.update {

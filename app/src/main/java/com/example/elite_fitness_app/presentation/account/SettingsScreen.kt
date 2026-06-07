@@ -27,9 +27,11 @@ import com.example.elite_fitness_app.ui.theme.*
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    accountViewModel: AccountViewModel,
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val accountState by accountViewModel.uiState.collectAsState()
     val isDarkMode by viewModel.isDarkMode.collectAsState()
     val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsState()
     val scrollState = rememberScrollState()
@@ -70,6 +72,92 @@ fun SettingsScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // Personal Information Section
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Personal Information",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = OnSurface
+                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        EliteInputField(
+                            value = accountState.editName,
+                            onValueChange = accountViewModel::updateName,
+                            label = "Display Name",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        EliteInputField(
+                            value = accountState.editPhone,
+                            onValueChange = accountViewModel::updatePhone,
+                            label = "Phone Number",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            EliteInputField(
+                                value = accountState.editHeight,
+                                onValueChange = accountViewModel::updateHeight,
+                                label = "Height (cm)",
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            EliteInputField(
+                                value = accountState.editWeight,
+                                onValueChange = accountViewModel::updateWeight,
+                                label = "Weight (kg)",
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        EliteInputField(
+                            value = accountState.editAge,
+                            onValueChange = accountViewModel::updateAge,
+                            label = "Age (years)",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        EliteInputField(
+                            value = accountState.editGoal,
+                            onValueChange = accountViewModel::updateGoal,
+                            label = "Fitness Goal",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        if (accountState.error != null) {
+                            Text(
+                                text = accountState.error ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Error
+                            )
+                        }
+
+                        if (accountState.success) {
+                            Text(
+                                text = "Personal information updated successfully!",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Secondary
+                            )
+                        }
+
+                        PrimaryButton(
+                            text = "Save Personal Info",
+                            onClick = { accountViewModel.saveProfile() },
+                            isLoading = accountState.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
             // App Preferences Section
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(

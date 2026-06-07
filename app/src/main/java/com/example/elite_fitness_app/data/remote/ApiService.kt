@@ -28,11 +28,31 @@ interface ApiService {
     @PUT("user/profile")
     suspend fun updateProfile(@Body user: UserDto): ApiResponse<UserDto>
 
+    @Multipart
+    @POST("user/profile/image")
+    suspend fun uploadProfileImage(
+        @Part image: okhttp3.MultipartBody.Part
+    ): ApiResponse<UserDto>
+
     @PATCH("user/password")
     suspend fun changePassword(@Body request: ChangePasswordRequest): ApiResponse<Unit>
 
     @DELETE("user")
     suspend fun deleteAccount(): ApiResponse<Unit>
+
+    @Multipart
+    @POST("workouts/{id}/image")
+    suspend fun uploadWorkoutImage(
+        @Path("id") id: String,
+        @Part image: okhttp3.MultipartBody.Part
+    ): ApiResponse<WorkoutDto>
+
+    @Multipart
+    @POST("plans/{id}/image")
+    suspend fun uploadPlanImage(
+        @Path("id") id: String,
+        @Part image: okhttp3.MultipartBody.Part
+    ): ApiResponse<TrainingPlanDto>
 
     // ─── Exercises ────────────────────────────────────────────────────────
     @GET("exercises")
